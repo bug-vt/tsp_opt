@@ -2,6 +2,8 @@
 
 import random
 import math
+import sys
+from timeit import default_timer as time
 
 class City:
   def __init__ (self, name):
@@ -16,10 +18,10 @@ class City:
     return str (self)
 
 
-n_max = 4
-cities = [City(i) for i in range (n_max)]
-visited = [None] * n_max
-tsp_route = [None] * n_max
+n = int (sys.argv[1])
+cities = [City(i) for i in range (n)]
+visited = [None] * n
+tsp_route = [None] * n
 min_total_dist = math.inf
 
 
@@ -29,17 +31,19 @@ def dist (a, b):
 def calc_total_dist (visited):
   global min_total_dist
   global tsp_route
-
+  
+  # find total distance by visiting the cities in the given order
   total_dist = 0
   for i in range (len (visited) - 1):
     total_dist += dist (visited[i], visited[i+1]) 
-
+  
+  # update minimum total distance if needed
   if total_dist < min_total_dist:
     min_total_dist = total_dist
     tsp_route = [visited[i] for i in range (len (visited))]
 
 def tsp_unopt (cities):
-  # base case
+  # base case: no more cities to visit
   if len (cities) == 0:
     calc_total_dist (visited)
     return 0
@@ -50,9 +54,13 @@ def tsp_unopt (cities):
          
 
 def main ():
+  
+  start = time ()
   tsp_unopt (cities)
-  print (min_total_dist)
-  print (tsp_route)
+  duration = time () - start
+  print ("Size %d : %.3f seconds" % (n, duration) )
+  #print (min_total_dist)
+  #print (tsp_route)
 
 if __name__ == "__main__":
   main ()
