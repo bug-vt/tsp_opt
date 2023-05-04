@@ -6,6 +6,7 @@
 #include <omp.h>
 #include <string>
 #include <utility>
+#include <unordered_map>
 
 using namespace std;
 
@@ -43,6 +44,7 @@ vector<City> cities;
 vector<City> visited;
 vector<City> tsp_route;
 float min_total_dist;
+unordered_map<long, float> mst_table;
 
 string show_route ()
 {
@@ -93,6 +95,21 @@ float prim_mst (vector<City> cities)
   return total_dist;
 }
 
+float mst_lookup (vector<City> cities)
+{
+  long key = 0;
+  for (int i = 0; i < cities.size (); i++)
+  {
+    long bit = 1 << cities[i].id;
+    key |= bit;
+  }
+
+  if (mst_table.count (key) == 0)
+    mst_table[key] = prim_mst (cities);
+
+  return mst_table[key];
+}
+
 void tsp_opt (vector<City> cities, float curr_total)
 {
   int size = cities.size ();
@@ -108,7 +125,7 @@ void tsp_opt (vector<City> cities, float curr_total)
     return;
   }
 
-  if (curr_total + prim_mst (cities) > min_total_dist)
+  if (curr_total + mst_lookup (cities) > min_total_dist)
     return;
 
   for (int i = 0; i < size; i++)
