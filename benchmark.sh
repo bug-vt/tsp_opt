@@ -1,7 +1,7 @@
 
-RUN=10
+RUN=15
 
-for (( i=5; i<=$RUN; i++ ))
+for (( i=8; i<=$RUN; i++ ))
 do
   ./tsp.py $i 
 done
