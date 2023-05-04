@@ -1,5 +1,5 @@
 
-RUN=15
+RUN=25
 
 for (( i=8; i<=$RUN; i++ ))
 do
