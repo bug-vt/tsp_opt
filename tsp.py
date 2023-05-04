@@ -131,14 +131,14 @@ def prim_mst (cities):
     # update the cost of the neighboring cities if needed
     # and find the next minimum cost city to visit.
     # note that since tsp is a complete graph, neighbor is all the other cities.
-    for i in range (len (cities)):
+    for j in range (len (cities)):
       # only consider unvisited neighbor
-      if in_mst[i] == False:
-        if dist (new_city, cities[i]) < cost[i]:
-          cost[i] = dist (new_city, cities[i])
-        if cost[i] < next_min:
-          min_city = (cities[i], i)
-          next_min = cost[i]
+      if in_mst[j] == False:
+        if dist (new_city, cities[j]) < cost[j]:
+          cost[j] = dist (new_city, cities[j])
+        if cost[j] < next_min:
+          min_city = (cities[j], j)
+          next_min = cost[j]
     
     # build MST each time we visit next city.
     # in this case, we just keep track of total cost

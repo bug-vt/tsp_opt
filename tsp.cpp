@@ -5,6 +5,7 @@
 #include <limits>
 #include <omp.h>
 #include <string>
+#include <utility>
 
 using namespace std;
 
@@ -43,16 +44,57 @@ vector<City> visited;
 vector<City> tsp_route;
 float min_total_dist;
 
+string show_route ()
+{
+  string out = "[ ";
+  for (int i = 0; i < tsp_route.size (); i++)
+    out += to_string(tsp_route[i].id) + " ";
+
+  out += "]";
+  return out;
+}
+
 float dist (City a, City b)
 {
   return sqrt (pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
 
+float prim_mst (vector<City> cities)
+{
+  float total_dist = 0;
+  vector<float> cost (cities.size (), numeric_limits<float>::infinity ());
+  vector<char> in_mst (cities.size (), 0);
+
+  cost[0] = 0;
+  pair<City, int> min_city (cities[0], 0);
+
+  for (int i = 0; i < cities.size () - 1; i++)
+  {
+    City new_city = min_city.first;
+    in_mst[min_city.second] = 1;
+    float next_min = numeric_limits<float>::infinity ();
+    
+    for (int j = 0; j < cities.size (); j++)
+    {
+      if (!in_mst[j])
+      {
+        if (dist (new_city, cities[j]) < cost[j])
+          cost[j] = dist (new_city, cities[j]);
+        if (cost[j] < next_min)
+        {
+          min_city.first = cities[j];
+          min_city.second = j;
+          next_min = cost[j];
+        }
+      }
+    }
+    total_dist += next_min;
+  }
+  return total_dist;
+}
+
 void tsp_opt (vector<City> cities, float curr_total)
 {
-  if (curr_total > min_total_dist)
-    return;
-
   int size = cities.size ();
   if (size == 0)
   {
@@ -65,6 +107,9 @@ void tsp_opt (vector<City> cities, float curr_total)
     }
     return;
   }
+
+  if (curr_total + prim_mst (cities) > min_total_dist)
+    return;
 
   for (int i = 0; i < size; i++)
   {
@@ -81,15 +126,6 @@ void tsp_opt (vector<City> cities, float curr_total)
 
 }
 
-string show_route ()
-{
-  string out = "[ ";
-  for (int i = 0; i < tsp_route.size (); i++)
-    out += to_string(tsp_route[i].id) + " ";
-
-  out += "]";
-  return out;
-}
 
 
 int main (int argc, char** argv)
