@@ -140,9 +140,62 @@ void tsp_opt (vector<City> cities, float curr_total)
 
     tsp_opt (sub_cities, curr_total + dist (visited[size-1], visited[size]));
   }
-
 }
 
+void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
+{
+  int size = cities.size ();
+  if (size == 0)
+  {
+    float total_dist = dist (visited[0], visited[tsp_route.size()-1]) + curr_total;
+    if (total_dist < min_total_dist)
+    {
+      min_total_dist = total_dist;
+      for (int i = 0; i < tsp_route.size (); i++)
+        tsp_route[i] = visited[i];
+    }
+    return;
+  }
+
+  if (curr_total + mst_lookup (cities) > min_total_dist)
+    return;
+
+  for (int i = 0; i < size; i++)
+  {
+    visited[size-1] = cities[i];
+    vector<City> sub_cities;
+    for (int k = 0; k < size; k++)
+    {
+      if (k != i)
+        sub_cities.push_back (cities[k]);
+    }
+
+    tsp_opt2 (sub_cities, curr_total + dist (visited[size-1], visited[size]), visited);
+  }
+}
+
+void tsp_parallel ()
+{
+  int size = cities.size () - 1;
+  #pragma omp parallel 
+  {
+    City *visited = new City [cities.size ()];
+    visited[size] = cities[size];
+    #pragma omp for
+    for (int i = 0; i < size; i++)
+    {
+      visited[size-1] = cities[i];
+      vector<City> sub_cities;
+      for (int k = 0; k < size; k++)
+      {
+        if (k != i)
+          sub_cities.push_back (cities[k]);
+      }
+
+      tsp_opt2 (sub_cities, dist (visited[size-1], visited[size]), visited);
+    }
+  }
+}
 
 
 int main (int argc, char** argv)
@@ -169,6 +222,13 @@ int main (int argc, char** argv)
   tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
   duration = omp_get_wtime () - start; 
   
-  printf ("Size %d | %.3f seconds | %.2f | %s\n", 
+  printf ("Opt      | Size %d | %.3f seconds | %.2f | %s\n", 
+           n, duration, min_total_dist, show_route().c_str());
+
+  start = omp_get_wtime (); 
+  tsp_parallel ();
+  duration = omp_get_wtime () - start; 
+  
+  printf ("Parallel | Size %d | %.3f seconds | %.2f | %s\n", 
            n, duration, min_total_dist, show_route().c_str());
 }
