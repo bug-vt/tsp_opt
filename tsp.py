@@ -20,6 +20,7 @@ class City:
     return str (self)
 
 
+nthread = 4
 n = int (sys.argv[1])
 cities = [City(i) for i in range (n)]
 visited = [city for city in cities]
@@ -240,7 +241,7 @@ def tsp_recurse (cities, curr_total):
 def tsp_opt6 ():
   # parallelize subtree under first city (subtree with second city as a root)
   # pymp.Parallel is implicitly firstprivate
-  with pymp.Parallel(4) as p:
+  with pymp.Parallel(nthread) as p:
     # We fix last city inside the cities list as a starting point
     # so starting size is length of cities - 1
     size = len (cities) - 1
@@ -248,6 +249,19 @@ def tsp_opt6 ():
       visited[size - 1] = cities[i] 
       tsp_recurse (cities[:i] + cities[i + 1:size], dist(visited[size-1], visited[size]))
 
+# ------------------------------------------------------------
+# Opt 7: Parallelizing with dynamic scheduling
+
+def tsp_opt7 ():
+  # parallelize subtree under first city (subtree with second city as a root)
+  # pymp.Parallel is implicitly firstprivate
+  with pymp.Parallel(nthread) as p:
+    # We fix last city inside the cities list as a starting point
+    # so starting size is length of cities - 1
+    size = len (cities) - 1
+    for i in p.xrange (size):
+      visited[size - 1] = cities[i] 
+      tsp_recurse (cities[:i] + cities[i + 1:size], dist(visited[size-1], visited[size]))
 
 def main ():
   global min_total_dist
@@ -283,21 +297,31 @@ def main ():
 #  duration = time () - start
 #  print ("Opt 4 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
 #
-  min_total_dist = math.inf
-  start = time ()
-  tsp_opt5 (cities[:n-1], 0)
-  duration = time () - start
-  print ("Opt 5 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
-  
+#  min_total_dist = math.inf
+#  start = time ()
+#  tsp_opt5 (cities[:n-1], 0)
+#  duration = time () - start
+#  print ("Opt 5 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
+#  
+#  # share minimum total distance between threads
+#  min_total_dist = pymp.shared.array((1,))
+#  min_total_dist[0] = math.inf
+#  tsp_route = pymp.shared.array((n,), dtype='uint8')
+#
+#  start = time ()
+#  tsp_opt6 ()
+#  duration = time () - start
+#  print ("Opt 6 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist[0], tsp_route) )
+#
   # share minimum total distance between threads
   min_total_dist = pymp.shared.array((1,))
   min_total_dist[0] = math.inf
   tsp_route = pymp.shared.array((n,), dtype='uint8')
 
   start = time ()
-  tsp_opt6 ()
+  tsp_opt7 ()
   duration = time () - start
-  print ("Opt 6 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist[0], tsp_route) )
+  print ("Opt 7 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist[0], tsp_route) )
 
 
 if __name__ == "__main__":
