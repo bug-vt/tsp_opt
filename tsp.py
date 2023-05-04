@@ -166,6 +166,48 @@ def tsp_opt4 (cities, curr_total):
     visited[size - 1] = cities[i] 
     tsp_opt4 (cities[:i] + cities[i + 1:], curr_total + dist(visited[size-1], visited[size]))
 
+# ------------------------------------------------------------
+# Opt 5: Cache MST to avoid recomputation
+
+mst_table = {}
+
+def mst_lookup (cities):
+  global mst_table
+  
+  # cities are encoded into n bit binary to represent key for the hash table 
+  key = 0
+  for city in cities:
+    bit = 1 << city.index
+    key |= bit
+
+  if key not in mst_table:
+    mst_table[key] = prim_mst (cities)
+
+  return mst_table[key]
+
+def tsp_opt5 (cities, curr_total):
+  global min_total_dist
+  global tsp_route
+
+  size = len (cities) 
+  # base case: no more cities to visit
+  if size == 0:
+    # connect first and last cities to form cycle
+    total_dist = dist (visited[0], visited[n-1]) + curr_total
+    # update minimum total distance if needed
+    if total_dist < min_total_dist:
+      min_total_dist = total_dist
+      tsp_route = [visited[i] for i in range (len (visited))]
+    return 0
+
+  # stop searching when we already know the route cannot be minimum
+  if curr_total + mst_lookup (cities) > min_total_dist:
+    return 0
+
+  for i in range (size):
+    visited[size - 1] = cities[i] 
+    tsp_opt5 (cities[:i] + cities[i + 1:], curr_total + dist(visited[size-1], visited[size]))
+
 def main ():
   global min_total_dist
   
@@ -198,6 +240,12 @@ def main ():
   tsp_opt4 (cities[:n-1], 0)
   duration = time () - start
   print ("Opt 4 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
+
+  min_total_dist = math.inf
+  start = time ()
+  tsp_opt5 (cities[:n-1], 0)
+  duration = time () - start
+  print ("Opt 5 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
 
 if __name__ == "__main__":
   main ()
