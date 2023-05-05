@@ -109,7 +109,6 @@ float mst_lookup (vector<City> cities)
 
   return mst_table[key];
 }
-
 void tsp_opt (vector<City> cities, float curr_total)
 {
   int size = cities.size ();
@@ -181,7 +180,7 @@ void tsp_parallel ()
   {
     City *visited = new City [cities.size ()];
     visited[size] = cities[size];
-    #pragma omp for
+    #pragma omp for schedule (dynamic)
     for (int i = 0; i < size; i++)
     {
       visited[size-1] = cities[i];
@@ -194,6 +193,7 @@ void tsp_parallel ()
 
       tsp_opt2 (sub_cities, dist (visited[size-1], visited[size]), visited);
     }
+    free (visited);
   }
 }
 
@@ -218,17 +218,12 @@ int main (int argc, char** argv)
   visited[n-1] = cities[n-1];
   
   double start, duration;
+  
   start = omp_get_wtime (); 
   tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
   duration = omp_get_wtime () - start; 
   
-  printf ("Opt      | Size %d | %.3f seconds | %.2f | %s\n", 
+  printf ("C++ Opt  | Size %d | %.3f seconds | %.2f | %s\n", 
            n, duration, min_total_dist, show_route().c_str());
-
-  start = omp_get_wtime (); 
-  tsp_parallel ();
-  duration = omp_get_wtime () - start; 
-  
-  printf ("Parallel | Size %d | %.3f seconds | %.2f | %s\n", 
-           n, duration, min_total_dist, show_route().c_str());
+           
 }
