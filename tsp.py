@@ -40,6 +40,7 @@ def dist (a, b):
 
 def calc_total_dist (visited):
   global min_total_dist
+  global tsp_route
  
   # connect first and last cities to form cycle
   total_dist = dist (visited[0], visited[n-1])
@@ -70,6 +71,7 @@ def tsp_unopt (cities):
 
 def tsp_opt2 (cities, curr_total):
   global min_total_dist
+  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -91,6 +93,7 @@ def tsp_opt2 (cities, curr_total):
 
 def tsp_opt3 (cities, curr_total):
   global min_total_dist
+  global tsp_route
 
   # stop searching when we already know the route cannot be minimum
   if curr_total > min_total_dist:
@@ -152,6 +155,7 @@ def prim_mst (cities):
 
 def tsp_opt4 (cities, curr_total):
   global min_total_dist
+  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -192,6 +196,7 @@ def mst_lookup (cities):
 
 def tsp_opt5 (cities, curr_total):
   global min_total_dist
+  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -217,6 +222,7 @@ def tsp_opt5 (cities, curr_total):
 
 def tsp_recurse (cities, curr_total):
   global min_total_dist
+  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -226,7 +232,8 @@ def tsp_recurse (cities, curr_total):
     # update minimum total distance if needed
     if total_dist < min_total_dist[0]:
       min_total_dist[0] = total_dist
-      tsp_route = [visited[i] for i in range (len (visited))]
+      for i in range (len (visited)):
+        tsp_route[i] = visited[i].index
     return 0
 
   # stop searching when we already know the route cannot be minimum
@@ -264,7 +271,7 @@ def tsp_opt7 ():
 
 def main (option):
   global min_total_dist
-  global mst_table 
+  global tsp_route
   
   if option == 1: 
     min_total_dist = math.inf
@@ -305,6 +312,7 @@ def main (option):
     # share minimum total distance between threads
     min_total_dist = pymp.shared.array((1,))
     min_total_dist[0] = math.inf
+    tsp_route = pymp.shared.array((n,), dtype='uint8')
 
     start = time ()
     tsp_opt6 ()
@@ -315,6 +323,7 @@ def main (option):
     # share minimum total distance between threads
     min_total_dist = pymp.shared.array((1,))
     min_total_dist[0] = math.inf
+    tsp_route = pymp.shared.array((n,), dtype='uint8')
 
     start = time ()
     tsp_opt7 ()
