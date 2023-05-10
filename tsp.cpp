@@ -46,6 +46,9 @@ vector<City> tsp_route;
 float min_total_dist;
 unordered_map<long, float> mst_table;
 
+omp_lock_t mst_lock;
+omp_lock_t min_total_lock;
+
 string show_route ()
 {
   string out = "[ ";
@@ -104,11 +107,16 @@ float mst_lookup (vector<City> cities)
     key |= bit;
   }
 
+  omp_set_lock (&mst_lock);
   if (mst_table.count (key) == 0)
     mst_table[key] = prim_mst (cities);
+  
+  float out = mst_table[key];
+  omp_unset_lock (&mst_lock); 
 
-  return mst_table[key];
+  return out;
 }
+
 void tsp_opt (vector<City> cities, float curr_total)
 {
   int size = cities.size ();
@@ -144,19 +152,34 @@ void tsp_opt (vector<City> cities, float curr_total)
 void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
 {
   int size = cities.size ();
+  float curr_min;
+
   if (size == 0)
   {
     float total_dist = dist (visited[0], visited[tsp_route.size()-1]) + curr_total;
+    bool updated = false;
+
+    omp_set_lock (&min_total_lock);
     if (total_dist < min_total_dist)
     {
       min_total_dist = total_dist;
+      updated = true;
+    }
+    omp_unset_lock (&min_total_lock);
+
+    if (updated)
+    {
       for (int i = 0; i < tsp_route.size (); i++)
         tsp_route[i] = visited[i];
     }
     return;
   }
 
-  if (curr_total + mst_lookup (cities) > min_total_dist)
+  omp_set_lock (&min_total_lock);
+  curr_min = min_total_dist;
+  omp_unset_lock (&min_total_lock);
+
+  if (curr_total + mst_lookup (cities) > curr_min)
     return;
 
   for (int i = 0; i < size; i++)
@@ -176,10 +199,11 @@ void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
 void tsp_parallel ()
 {
   int size = cities.size () - 1;
-  #pragma omp parallel 
+  #pragma omp parallel
   {
     City *visited = new City [cities.size ()];
     visited[size] = cities[size];
+
     #pragma omp for schedule (dynamic)
     for (int i = 0; i < size; i++)
     {
@@ -193,13 +217,18 @@ void tsp_parallel ()
 
       tsp_opt2 (sub_cities, dist (visited[size-1], visited[size]), visited);
     }
-    free (visited);
+    delete (visited);
   }
 }
 
 
 int main (int argc, char** argv)
 {
+  omp_init_lock (&mst_lock);
+  omp_init_lock (&min_total_lock);
+
+  srand (time(NULL));
+
   if (argc != 2)
   {
     cout << "Usage: tsp <number of cities>" << endl;
@@ -223,7 +252,16 @@ int main (int argc, char** argv)
   tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
   duration = omp_get_wtime () - start; 
   
-  printf ("C++ Opt  | Size %d | %.3f seconds | %.2f | %s\n", 
+  printf ("C++ Opt      | Size %d | %.3f seconds | %.2f | %s\n", 
            n, duration, min_total_dist, show_route().c_str());
            
+  min_total_dist = numeric_limits<float>::infinity ();
+  tsp_route.clear ();
+  tsp_route.resize (n);
+  start = omp_get_wtime (); 
+  tsp_parallel ();
+  duration = omp_get_wtime () - start; 
+  
+  printf ("C++ parallel | Size %d | %.3f seconds | %.2f | %s\n", 
+           n, duration, min_total_dist, show_route().c_str());
 }
