@@ -19,13 +19,20 @@ class City:
   def __repr__ (self):
     return str (self)
 
-
+# number of threads
 nthread = 4
-n = int (sys.argv[1])
+# number of cities
+n = int (sys.argv[2])
+# cities to visit
 cities = [City(i) for i in range (n)]
+# visited cities in order
 visited = [city for city in cities]
+# final/optimal tsp route
 tsp_route = [None] * n
+# current minimum tsp route distance
 min_total_dist = math.inf
+# table for storing minimum spanning tree of each subroute
+mst_table = {}
 
 
 def dist (a, b):
@@ -33,7 +40,6 @@ def dist (a, b):
 
 def calc_total_dist (visited):
   global min_total_dist
-  global tsp_route
  
   # connect first and last cities to form cycle
   total_dist = dist (visited[0], visited[n-1])
@@ -64,7 +70,6 @@ def tsp_unopt (cities):
 
 def tsp_opt2 (cities, curr_total):
   global min_total_dist
-  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -86,7 +91,6 @@ def tsp_opt2 (cities, curr_total):
 
 def tsp_opt3 (cities, curr_total):
   global min_total_dist
-  global tsp_route
 
   # stop searching when we already know the route cannot be minimum
   if curr_total > min_total_dist:
@@ -148,7 +152,6 @@ def prim_mst (cities):
 
 def tsp_opt4 (cities, curr_total):
   global min_total_dist
-  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -172,7 +175,6 @@ def tsp_opt4 (cities, curr_total):
 # ------------------------------------------------------------
 # Opt 5: Cache MST to avoid recomputation
 
-mst_table = {}
 
 def mst_lookup (cities):
   global mst_table
@@ -190,7 +192,6 @@ def mst_lookup (cities):
 
 def tsp_opt5 (cities, curr_total):
   global min_total_dist
-  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -216,7 +217,6 @@ def tsp_opt5 (cities, curr_total):
 
 def tsp_recurse (cities, curr_total):
   global min_total_dist
-  global tsp_route
 
   size = len (cities) 
   # base case: no more cities to visit
@@ -226,8 +226,7 @@ def tsp_recurse (cities, curr_total):
     # update minimum total distance if needed
     if total_dist < min_total_dist[0]:
       min_total_dist[0] = total_dist
-      for i in range (len (visited)):
-        tsp_route[i] = visited[i].index
+      tsp_route = [visited[i] for i in range (len (visited))]
     return 0
 
   # stop searching when we already know the route cannot be minimum
@@ -263,66 +262,72 @@ def tsp_opt7 ():
       visited[size - 1] = cities[i] 
       tsp_recurse (cities[:i] + cities[i + 1:size], dist(visited[size-1], visited[size]))
 
-def main ():
+def main (option):
   global min_total_dist
-  global tsp_route 
+  global mst_table 
   
-#  min_total_dist = math.inf
-#  start = time ()
-#  tsp_unopt (cities)
-#  duration = time () - start
-#  print ("Unopt | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
-#
-#  min_total_dist = math.inf
-#  start = time ()
-#  tsp_unopt (cities[:n-1])
-#  duration = time () - start
-#  print ("Opt 1 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
-#
-#  min_total_dist = math.inf
-#  start = time ()
-#  tsp_opt2 (cities[:n-1], 0)
-#  duration = time () - start
-#  print ("Opt 2 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
-#
-#  min_total_dist = math.inf
-#  start = time ()
-#  tsp_opt3 (cities[:n-1], 0)
-#  duration = time () - start
-#  print ("Opt 3 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
-#
-#  min_total_dist = math.inf
-#  start = time ()
-#  tsp_opt4 (cities[:n-1], 0)
-#  duration = time () - start
-#  print ("Opt 4 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
-#
-#  min_total_dist = math.inf
-#  start = time ()
-#  tsp_opt5 (cities[:n-1], 0)
-#  duration = time () - start
-#  print ("Opt 5 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
-#  
-#  # share minimum total distance between threads
-#  min_total_dist = pymp.shared.array((1,))
-#  min_total_dist[0] = math.inf
-#  tsp_route = pymp.shared.array((n,), dtype='uint8')
-#
-#  start = time ()
-#  tsp_opt6 ()
-#  duration = time () - start
-#  print ("Opt 6 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist[0], tsp_route) )
-#
-  # share minimum total distance between threads
-  min_total_dist = pymp.shared.array((1,))
-  min_total_dist[0] = math.inf
-  tsp_route = pymp.shared.array((n,), dtype='uint8')
+  if option == 1: 
+    min_total_dist = math.inf
+    start = time ()
+    tsp_unopt (cities[:n-1])
+    duration = time () - start
+    print ("Opt 1 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
 
-  start = time ()
-  tsp_opt7 ()
-  duration = time () - start
-  print ("Opt 7 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist[0], tsp_route) )
+  elif option == 2:
+    min_total_dist = math.inf
+    start = time ()
+    tsp_opt2 (cities[:n-1], 0)
+    duration = time () - start
+    print ("Opt 2 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
+
+  elif option == 3:
+    min_total_dist = math.inf
+    start = time ()
+    tsp_opt3 (cities[:n-1], 0)
+    duration = time () - start
+    print ("Opt 3 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
+
+  elif option == 4: 
+    min_total_dist = math.inf
+    start = time ()
+    tsp_opt4 (cities[:n-1], 0)
+    duration = time () - start
+    print ("Opt 4 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
+
+  elif option == 5:
+    min_total_dist = math.inf
+    start = time ()
+    tsp_opt5 (cities[:n-1], 0)
+    duration = time () - start
+    print ("Opt 5 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
+   
+  elif option == 6: 
+    # share minimum total distance between threads
+    min_total_dist = pymp.shared.array((1,))
+    min_total_dist[0] = math.inf
+
+    start = time ()
+    tsp_opt6 ()
+    duration = time () - start
+    print ("Opt 6 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist[0], tsp_route) )
+
+  elif option == 7:
+    # share minimum total distance between threads
+    min_total_dist = pymp.shared.array((1,))
+    min_total_dist[0] = math.inf
+
+    start = time ()
+    tsp_opt7 ()
+    duration = time () - start
+    print ("Opt 7 | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist[0], tsp_route) )
+ 
+  else:
+    min_total_dist = math.inf
+    start = time ()
+    tsp_unopt (cities)
+    duration = time () - start
+    print ("Unopt | Size %d | %.3f seconds | %d | %s" % (n, duration, min_total_dist, tsp_route) )
 
 
 if __name__ == "__main__":
-  main ()
+  main (int(sys.argv[1]))
