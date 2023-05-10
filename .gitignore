@@ -1,3 +1,10 @@
 *.swp
 tsp
 test.sh
+*.cls
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+.DS_Store
