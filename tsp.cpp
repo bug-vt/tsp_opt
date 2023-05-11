@@ -325,7 +325,7 @@ int main (int argc, char** argv)
       tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
       duration = omp_get_wtime () - start; 
       
-      printf ("C++ O3 flag  | Size %d | %.3f seconds | %.2f | %s\n", 
+      printf ("C++ Opt      | Size %d | %.3f seconds | %.2f | %s\n", 
                n, duration, min_total_dist, show_route().c_str());
       break;
 
