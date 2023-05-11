@@ -257,7 +257,7 @@ void tsp_parallel ()
 int main (int argc, char** argv)
 {
   omp_init_lock (&min_update_lock);
-  //srand (time(NULL));
+  srand (time(NULL));
 
   if (argc != 3)
   {
