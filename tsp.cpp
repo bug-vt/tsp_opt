@@ -40,10 +40,15 @@ ostream& operator<< (ostream& os, const City& city)
   return os;
 }
 
+// cities to visit
 vector<City> cities; 
+// visited cities in order
 vector<City> visited;
+// final/optimal tsp route
 vector<City> tsp_route;
+// current minimum tsp route distance
 float min_total_dist;
+// table for storing minimum spanning tree of each subroute
 thread_local unordered_map<long, float> mst_table;
 
 omp_lock_t min_update_lock;
@@ -65,21 +70,29 @@ float dist (City a, City b)
 
 float prim_mst (vector<City> cities)
 {
+  // initialize
   float total_dist = 0;
   vector<float> cost (cities.size (), numeric_limits<float>::infinity ());
   vector<char> in_mst (cities.size (), 0);
 
+  // pick source city
+  // in this case, we pick the first city 
   cost[0] = 0;
   pair<City, int> min_city (cities[0], 0);
 
+  // For each iteration, visit next city with minimum cost
   for (int i = 0; i < cities.size () - 1; i++)
   {
     City new_city = min_city.first;
     in_mst[min_city.second] = 1;
     float next_min = numeric_limits<float>::infinity ();
     
+    // update the cost of the neighboring cities if needed
+    // and find the next minimum cost city to visit.
+    // note that since tsp is a complete graph, neighbor is all the other cities.
     for (int j = 0; j < cities.size (); j++)
     {
+      // only consider unvisited neighbor
       if (!in_mst[j])
       {
         if (dist (new_city, cities[j]) < cost[j])
@@ -92,6 +105,8 @@ float prim_mst (vector<City> cities)
         }
       }
     }
+    // build MST each time we visit next city.
+    // in this case, we just keep track of total cost
     total_dist += next_min;
   }
   return total_dist;
@@ -99,6 +114,7 @@ float prim_mst (vector<City> cities)
 
 float mst_lookup (vector<City> cities)
 {
+  // cities are encoded into n bit binary to represent key for the hash table 
   long key = 0;
   for (int i = 0; i < cities.size (); i++)
   {
@@ -117,9 +133,12 @@ float mst_lookup (vector<City> cities)
 void tsp_unopt (vector<City> cities, float curr_total)
 {
   int size = cities.size ();
+  // base case: no more cities to visit
   if (size == 0)
   {
+    // connect first and last cities to form cycle
     float total_dist = dist (visited[0], visited[visited.size ()-1]) + curr_total;
+    // update minimum total distance if needed
     if (total_dist < min_total_dist)
     {
       min_total_dist = total_dist;
@@ -150,9 +169,12 @@ void tsp_unopt (vector<City> cities, float curr_total)
 void tsp_opt (vector<City> cities, float curr_total)
 {
   int size = cities.size ();
+  // base case: no more cities to visit
   if (size == 0)
   {
+    // connect first and last cities to form cycle
     float total_dist = dist (visited[0], visited[visited.size ()-1]) + curr_total;
+    // update minimum total distance if needed
     if (total_dist < min_total_dist)
     {
       min_total_dist = total_dist;
@@ -162,6 +184,7 @@ void tsp_opt (vector<City> cities, float curr_total)
     return;
   }
 
+  // stop searching when we already know the route cannot be minimum
   if (curr_total + mst_lookup (cities) > min_total_dist)
     return;
 
@@ -186,12 +209,15 @@ void tsp_opt (vector<City> cities, float curr_total)
 void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
 {
   int size = cities.size ();
+  // base case: no more cities to visit
   if (size == 0)
   {
+    // connect first and last cities to form cycle
     float total_dist = dist (visited[0], visited[tsp_route.size()-1]) + curr_total;
     bool updated = false;
 
     omp_set_lock (&min_update_lock);
+    // update minimum total distance if needed
     if (total_dist < min_total_dist)
     {
       min_total_dist = total_dist;
@@ -207,6 +233,7 @@ void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
     return;
   }
 
+  // stop searching when we already know the route cannot be minimum
   if (curr_total + mst_lookup (cities) > min_total_dist)
     return;
 
@@ -230,9 +257,12 @@ void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
 
 void tsp_parallel ()
 {
+  // parallelize subtree under first city (subtree with second city as a root)
   int size = cities.size () - 1;
   #pragma omp parallel
   {
+    // We fix last city inside the cities list as a starting point
+    // so starting size is length of cities - 1
     City *visited = new City [cities.size ()];
     visited[size] = cities[size];
 
@@ -295,7 +325,7 @@ int main (int argc, char** argv)
       tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
       duration = omp_get_wtime () - start; 
       
-      printf ("C++ Opt      | Size %d | %.3f seconds | %.2f | %s\n", 
+      printf ("C++ O3 flag  | Size %d | %.3f seconds | %.2f | %s\n", 
                n, duration, min_total_dist, show_route().c_str());
       break;
 
@@ -304,7 +334,7 @@ int main (int argc, char** argv)
       {
         int nthread = -1;
         omp_set_num_threads (i);
-        //print number of threads
+        // save number of threads
         #pragma omp parallel
         { 
           #pragma omp single
