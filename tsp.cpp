@@ -302,12 +302,13 @@ int main (int argc, char** argv)
     case 2:
       for (int i = 1; i <= 32; i *= 2)
       {
+        int nthread = -1;
         omp_set_num_threads (i);
         //print number of threads
         #pragma omp parallel
         { 
           #pragma omp single
-          printf("Parallelize: %d threads\n", omp_get_num_threads ());
+          nthread = omp_get_num_threads ();
         }
         min_total_dist = numeric_limits<float>::infinity ();
         
@@ -315,8 +316,8 @@ int main (int argc, char** argv)
         tsp_parallel ();
         duration = omp_get_wtime () - start; 
         
-        printf ("C++ parallel | Size %d | %.3f seconds | %.2f | %s\n", 
-                 n, duration, min_total_dist, show_route().c_str());
+        printf ("C++ parallel %d | Size %d | %.3f seconds | %.2f | %s\n", 
+                 nthread, n, duration, min_total_dist, show_route().c_str());
       }
   }
 }
