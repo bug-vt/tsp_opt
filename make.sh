@@ -1,18 +1,9 @@
-g++ -fopenmp tsp.cpp -o tsp
-
-START=8
-END=12
-
-for (( i=$START; i<=$END; i++ ))
-do
-  ./tsp 0 $i
-done
 
 g++ -fopenmp -O3 tsp.cpp -o tsp
 echo "O3 flag on"
 
 START=8
-END=13
+END=12
 
 for (( i=$START; i<=$END; i++ ))
 do

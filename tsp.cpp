@@ -63,7 +63,7 @@ string show_route ()
   return out;
 }
 
-float dist (City a, City b)
+inline float dist (City a, City b)
 {
   return sqrt (pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
 }
@@ -89,7 +89,7 @@ float prim_mst (vector<City> cities)
     
     // update the cost of the neighboring cities if needed
     // and find the next minimum cost city to visit.
-    // note that since tsp is a complete graph, neighbor is all the other cities.
+    // note that since tsp is a complete graph, neighbors are all the other cities.
     for (int j = 0; j < cities.size (); j++)
     {
       // only consider unvisited neighbor
