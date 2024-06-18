@@ -10,6 +10,7 @@ do
   ./tsp 0 $i 
 done
 
+: '
 START=10
 END=30
 
@@ -25,4 +26,4 @@ for (( i=$START; i<=$END; i++ ))
 do
   ./tsp 2 $i
 done
-
+'

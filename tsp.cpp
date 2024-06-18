@@ -8,6 +8,8 @@
 #include <utility>
 #include <unordered_map>
 
+#define MAXNUM_CITY 32
+
 using namespace std;
 
 class City
@@ -34,18 +36,28 @@ class City
     friend ostream& operator<< (ostream& os, const City& city); 
 };
 
+
+
+/*
 ostream& operator<< (ostream& os, const City& city)
 {
   os << city.id;
   return os;
 }
+*/
 
+int num_city;
 // cities to visit
-vector<City> cities; 
+//vector<City> cities; 
+int city_id[MAXNUM_CITY];
+int city_x[MAXNUM_CITY];
+int city_y[MAXNUM_CITY];
 // visited cities in order
-vector<City> visited;
+//vector<City> visited;
+int visited[MAXNUM_CITY];
 // final/optimal tsp route
-vector<City> tsp_route;
+//vector<City> tsp_route;
+int tsp_route[MAXNUM_CITY];
 // current minimum tsp route distance
 float min_total_dist;
 // table for storing minimum spanning tree of each subroute
@@ -53,21 +65,31 @@ thread_local unordered_map<long, float> mst_table;
 
 omp_lock_t min_update_lock;
 
+void init_cities ()
+{
+  for (int i = 0; i < num_city; i++)
+  {
+    city_x[i] = rand() % 500;
+    city_y[i] = rand() % 500;
+  }
+}
+
 string show_route ()
 {
   string out = "[ ";
-  for (int i = 0; i < tsp_route.size (); i++)
-    out += to_string(tsp_route[i].id) + " ";
+  for (int i = 0; i < num_city; i++)
+    out += to_string(tsp_route[i]) + " ";
 
   out += "]";
   return out;
 }
 
-inline float dist (City a, City b)
+inline float dist (int a, int b)
 {
-  return sqrt (pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+  return sqrt (pow(city_x[a] - city_x[b], 2) + pow(city_y[a] - city_y[b], 2));
 }
 
+/*
 float prim_mst (vector<City> cities)
 {
   // initialize
@@ -129,43 +151,55 @@ float mst_lookup (vector<City> cities)
 
   return out;
 }
+*/
 
-void tsp_unopt (vector<City> cities, float curr_total)
+int city_size (long city_mask)
 {
-  int size = cities.size ();
+  int size = 0;
+  // bit 1 means city is present,
+  // so add all the 1s from the bit mask
+  for (int i = 0; i < num_city; i++)
+  {
+    size += city_mask & 1u;
+    city_mask >>= 1;
+  }
+  return size;
+}
+
+// param:
+// city_mask: bit mask that define group of cities that are considered in the current subtree.
+// curr_total: total distance so far from the visited cities
+void tsp_unopt (long city_mask, float curr_total)
+{
+  int size = city_size (city_mask);
   // base case: no more cities to visit
   if (size == 0)
   {
     // connect first and last cities to form cycle
-    float total_dist = dist (visited[0], visited[visited.size ()-1]) + curr_total;
+    float total_dist = dist (visited[0], visited[num_city-1]) + curr_total;
     // update minimum total distance if needed
     if (total_dist < min_total_dist)
     {
       min_total_dist = total_dist;
-      for (int i = 0; i < visited.size (); i++)
+      for (int i = 0; i < num_city; i++)
         tsp_route[i] = visited[i];
     }
     return;
   }
-
-  for (int i = 0; i < size; i++)
+  for (int i = 1; i < num_city; i++)
   {
-    visited[size-1] = cities[i];
-    vector<City> sub_cities (size-1);
-    int k = 0;
-    for (int j = 0; j < size; j++)
-    {
-      if (j == i)
-        continue;
+    // exclude visited city from the city_mask
+    long sub_city_mask = city_mask & ~(1u << i);
+    if (sub_city_mask == city_mask)
+      continue;
 
-      sub_cities[k] = (cities[j]);
-      k++;
-    }
+    visited[size-1] = i;
 
-    tsp_unopt (sub_cities, curr_total + dist (visited[size-1], visited[size]));
+    tsp_unopt (sub_city_mask, curr_total + dist (visited[size-1], visited[size]));
   }
 }
 
+/*
 void tsp_opt (vector<City> cities, float curr_total)
 {
   int size = cities.size ();
@@ -282,6 +316,7 @@ void tsp_parallel ()
     delete (visited);
   }
 }
+*/
 
 
 int main (int argc, char** argv)
@@ -296,16 +331,24 @@ int main (int argc, char** argv)
   }
 
   int option = atoi (argv[1]);
-  int n = atoi (argv[2]);
-  cities.resize(n); 
-  visited.resize(n);
-  tsp_route.resize(n);
+  num_city = atoi (argv[2]);
+  //cities.resize(n); 
+  //visited.resize(n);
+  //tsp_route.resize(n);
   min_total_dist = numeric_limits<float>::infinity ();
 
-  for (int i = 0; i < n; i++)
-    cities[i] = City (i);
+  init_cities ();
 
-  visited[n-1] = cities[n-1];
+  long city_mask = 0;
+  for (int i = 0; i < num_city; i++)
+  {
+    city_mask <<= 1;
+    city_mask |= 1;
+  }
+
+  // select home city (visit city 0)
+  visited[num_city-1] = 0;
+  city_mask &= ~1;
   
   double start, duration;
 
@@ -313,20 +356,21 @@ int main (int argc, char** argv)
   {
     case 0:
       start = omp_get_wtime (); 
-      tsp_unopt (vector<City> (cities.begin (), cities.end () - 1), 0);
+      tsp_unopt (city_mask, 0);
       duration = omp_get_wtime () - start; 
       
       printf ("C++ Unopt    | Size %d | %.3f seconds | %.2f | %s\n", 
-               n, duration, min_total_dist, show_route().c_str());
+               num_city, duration, min_total_dist, show_route().c_str());
+      cout << temp << endl;
       break;
 
     case 1:
       start = omp_get_wtime (); 
-      tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
+      //tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
       duration = omp_get_wtime () - start; 
       
       printf ("C++ Opt      | Size %d | %.3f seconds | %.2f | %s\n", 
-               n, duration, min_total_dist, show_route().c_str());
+               num_city, duration, min_total_dist, show_route().c_str());
       break;
 
     case 2:
@@ -343,11 +387,11 @@ int main (int argc, char** argv)
         min_total_dist = numeric_limits<float>::infinity ();
         
         start = omp_get_wtime (); 
-        tsp_parallel ();
+        //tsp_parallel ();
         duration = omp_get_wtime () - start; 
         
         printf ("C++ parallel %d | Size %d | %.3f seconds | %.2f | %s\n", 
-                 nthread, n, duration, min_total_dist, show_route().c_str());
+                 nthread, num_city, duration, min_total_dist, show_route().c_str());
       }
   }
 }
