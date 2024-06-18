@@ -88,40 +88,45 @@ inline float dist (int a, int b)
   return sqrt (pow(city_x[a] - city_x[b], 2) + pow(city_y[a] - city_y[b], 2));
 }
 
-/*
-float prim_mst (vector<City> cities)
+
+float prim_mst (int city_id[], int city_size)
 {
   // initialize
   float total_dist = 0;
-  vector<float> cost (cities.size (), numeric_limits<float>::infinity ());
-  vector<char> in_mst (cities.size (), 0);
+  float cost[city_size];
+  for (int i = 0; i < city_size; i++)
+    cost[i] = numeric_limits<float>::infinity ();
+
+  int in_mst[city_size] = {0};
 
   // pick source city
   // in this case, we pick the first city 
   cost[0] = 0;
-  pair<City, int> min_city (cities[0], 0);
+  //pair<City, int> min_city (cities[0], 0);
+  int min_city = city_id[0];
+  int min_city_index = 0;
 
   // For each iteration, visit next city with minimum cost
-  for (int i = 0; i < cities.size () - 1; i++)
+  for (int i = 0; i < city_size - 1; i++)
   {
-    City new_city = min_city.first;
-    in_mst[min_city.second] = 1;
+    int new_city = min_city;
+    in_mst[min_city_index] = 1;
     float next_min = numeric_limits<float>::infinity ();
     
     // update the cost of the neighboring cities if needed
     // and find the next minimum cost city to visit.
     // note that since tsp is a complete graph, neighbors are all the other cities.
-    for (int j = 0; j < cities.size (); j++)
+    for (int j = 0; j < city_size; j++)
     {
       // only consider unvisited neighbor
       if (!in_mst[j])
       {
-        if (dist (new_city, cities[j]) < cost[j])
-          cost[j] = dist (new_city, cities[j]);
+        if (dist (new_city, city_id[j]) < cost[j])
+          cost[j] = dist (new_city, city_id[j]);
         if (cost[j] < next_min)
         {
-          min_city.first = cities[j];
-          min_city.second = j;
+          min_city = city_id[j];
+          min_city_index = j;
           next_min = cost[j];
         }
       }
@@ -133,24 +138,25 @@ float prim_mst (vector<City> cities)
   return total_dist;
 }
 
-float mst_lookup (vector<City> cities)
+
+float mst_lookup (int city_id[], int city_size)
 {
   // cities are encoded into n bit binary to represent key for the hash table 
   long key = 0;
-  for (int i = 0; i < cities.size (); i++)
+  for (int i = 0; i < city_size; i++)
   {
-    long bit = 1 << cities[i].id;
+    long bit = 1 << city_id[i];
     key |= bit;
   }
 
   if (mst_table.count (key) == 0)
-    mst_table[key] = prim_mst (cities);
+    mst_table[key] = prim_mst (city_id, city_size);
   
   float out = mst_table[key];
 
   return out;
 }
-*/
+
 
 // param:
 // city_id: IDs of unvistied cities 
@@ -192,47 +198,49 @@ void tsp_unopt (int city_id[], int city_size, float curr_total)
   }
 }
 
-/*
-void tsp_opt (vector<City> cities, float curr_total)
+
+void tsp_opt (int city_id[], int city_size, float curr_total)
 {
-  int size = cities.size ();
+  int size = city_size;
   // base case: no more cities to visit
   if (size == 0)
   {
     // connect first and last cities to form cycle
-    float total_dist = dist (visited[0], visited[visited.size ()-1]) + curr_total;
+    float total_dist = dist (visited[0], visited[num_city-1]) + curr_total;
     // update minimum total distance if needed
     if (total_dist < min_total_dist)
     {
       min_total_dist = total_dist;
-      for (int i = 0; i < visited.size (); i++)
+      for (int i = 0; i < num_city; i++)
         tsp_route[i] = visited[i];
     }
     return;
   }
 
   // stop searching when we already know the route cannot be minimum
-  if (curr_total + mst_lookup (cities) > min_total_dist)
+  if (curr_total + mst_lookup (city_id, size) > min_total_dist)
     return;
 
   for (int i = 0; i < size; i++)
   {
-    visited[size-1] = cities[i];
-    vector<City> sub_cities (size-1);
+    // visit next city
+    visited[size-1] = city_id[i];
+    int sub_city_id[size -1];
     int k = 0;
+    // exclude visited city from the city_id
     for (int j = 0; j < size; j++)
     {
       if (j == i)
         continue;
-
-      sub_cities[k] = (cities[j]);
+      sub_city_id[k] = city_id[j];
       k++;
     }
 
-    tsp_opt (sub_cities, curr_total + dist (visited[size-1], visited[size]));
+    tsp_opt (sub_city_id, size-1, curr_total + dist (visited[size-1], visited[size]));
   }
 }
 
+/*
 void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
 {
   int size = cities.size ();
@@ -315,7 +323,8 @@ void tsp_parallel ()
 int main (int argc, char** argv)
 {
   omp_init_lock (&min_update_lock);
-  srand (time(NULL));
+  //srand (time(NULL));
+  srand (0);
 
   if (argc != 3)
   {
@@ -352,7 +361,7 @@ int main (int argc, char** argv)
 
     case 1:
       start = omp_get_wtime (); 
-      //tsp_opt (vector<City> (cities.begin (), cities.end () - 1), 0);
+      tsp_opt (city_id, num_city-1, 0);
       duration = omp_get_wtime () - start; 
       
       printf ("C++ Opt      | Size %d | %.3f seconds | %.2f | %s\n", 

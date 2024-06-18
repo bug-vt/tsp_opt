@@ -10,7 +10,7 @@ do
   ./tsp 0 $i 
 done
 
-: '
+
 START=10
 END=30
 
@@ -19,6 +19,7 @@ do
   ./tsp 1 $i
 done
 
+: '
 START=10
 END=30
 
