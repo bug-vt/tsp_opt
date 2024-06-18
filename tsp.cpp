@@ -49,7 +49,6 @@ ostream& operator<< (ostream& os, const City& city)
 int num_city;
 // cities to visit
 //vector<City> cities; 
-int city_id[MAXNUM_CITY];
 int city_x[MAXNUM_CITY];
 int city_y[MAXNUM_CITY];
 // visited cities in order
@@ -153,25 +152,13 @@ float mst_lookup (vector<City> cities)
 }
 */
 
-int city_size (long city_mask)
-{
-  int size = 0;
-  // bit 1 means city is present,
-  // so add all the 1s from the bit mask
-  for (int i = 0; i < num_city; i++)
-  {
-    size += city_mask & 1u;
-    city_mask >>= 1;
-  }
-  return size;
-}
-
 // param:
-// city_mask: bit mask that define group of cities that are considered in the current subtree.
+// city_id: IDs of unvistied cities 
+// city_size: number of unvisited cities
 // curr_total: total distance so far from the visited cities
-void tsp_unopt (long city_mask, float curr_total)
+void tsp_unopt (int city_id[], int city_size, float curr_total)
 {
-  int size = city_size (city_mask);
+  int size = city_size;
   // base case: no more cities to visit
   if (size == 0)
   {
@@ -186,16 +173,22 @@ void tsp_unopt (long city_mask, float curr_total)
     }
     return;
   }
-  for (int i = 1; i < num_city; i++)
+  for (int i = 0; i < size; i++)
   {
-    // exclude visited city from the city_mask
-    long sub_city_mask = city_mask & ~(1u << i);
-    if (sub_city_mask == city_mask)
-      continue;
+    // visit next city
+    visited[size-1] = city_id[i];
+    int sub_city_id[size -1];
+    int k = 0;
+    // exclude visited city from the city_id
+    for (int j = 0; j < size; j++)
+    {
+      if (j == i)
+        continue;
+      sub_city_id[k] = city_id[j];
+      k++;
+    }
 
-    visited[size-1] = i;
-
-    tsp_unopt (sub_city_mask, curr_total + dist (visited[size-1], visited[size]));
+    tsp_unopt (sub_city_id, size-1, curr_total + dist (visited[size-1], visited[size]));
   }
 }
 
@@ -330,25 +323,19 @@ int main (int argc, char** argv)
     exit (1);
   }
 
-  int option = atoi (argv[1]);
-  num_city = atoi (argv[2]);
-  //cities.resize(n); 
-  //visited.resize(n);
-  //tsp_route.resize(n);
+  int option = atoi (argv[1]); // unopt, opt, parallel
+  num_city = atoi (argv[2]);  
   min_total_dist = numeric_limits<float>::infinity ();
 
   init_cities ();
-
-  long city_mask = 0;
-  for (int i = 0; i < num_city; i++)
-  {
-    city_mask <<= 1;
-    city_mask |= 1;
-  }
-
+  
   // select home city (visit city 0)
   visited[num_city-1] = 0;
-  city_mask &= ~1;
+
+  // city ids of unvistied cities (all cities except city 0)
+  int city_id [num_city-1];
+  for (int i = 0; i < num_city - 1; i++)
+    city_id[i] = i + 1;
   
   double start, duration;
 
@@ -356,12 +343,11 @@ int main (int argc, char** argv)
   {
     case 0:
       start = omp_get_wtime (); 
-      tsp_unopt (city_mask, 0);
+      tsp_unopt (city_id, num_city-1, 0);
       duration = omp_get_wtime () - start; 
       
       printf ("C++ Unopt    | Size %d | %.3f seconds | %.2f | %s\n", 
                num_city, duration, min_total_dist, show_route().c_str());
-      cout << temp << endl;
       break;
 
     case 1:
