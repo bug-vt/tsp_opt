@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Assignment P3 &ndash; Traveling Salesman Problem &lpar;TSP&rpar; Optimization</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex/dist/katex.min.css">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="assignment-p3--traveling-salesman-problem-tsp-optimization">Assignment P3 – Traveling Salesman Problem (TSP) Optimization</h1>
+<h3 id="bug-lee-7225881">Bug Lee (7225881)</h3>
+<h2 id="overview">Overview</h2>
+<p>This project focuses on optimizing small-scale TSP (n=30). Despite the small size, naive solution using brute force become intractable, estimated to take more than billions of years of computation time. Therefore, the following optimizations were used to tackle the TSP.</p>
+<ul>
+<li>High level optimization was applied reduce the growth rate from factorial to exponential. Approximation algorithm based on prim's algorithm and software caching reduced runtime complexity from O(n!) to O(<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>n</mi><mn>2</mn></msup><msup><mn>2</mn><mi>n</mi></msup></mrow><annotation encoding="application/x-tex">n^2 2^n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8141em;"></span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6644em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span></span></span></span></span></span></span></span>). This techniques were introduced in Writing Efficient Programs by Jon Bently [1]. To avoid blindly using the algorithm without understanding, deeper analysis on the algorithms were performed in this report.</li>
+<li>Multi-threading using OpenMP was explored for constant factors of speed up.</li>
+<li>Low level optimization was applied for noticiable speed up. Converted Array of Structure (AoS) to Structure of Array (SoA) for better hardware cache performance.</li>
+</ul>
+<p>In the end, small-scale TSP with input size 30 was solved in less than 100 seconds.</p>
+<h2 id="set-up">Set up</h2>
+<p>All measurements were performed using the personal laptop. The specification of the laptop is:</p>
+<ul>
+<li>Architecture: x86-64</li>
+<li>Logical CPU threads: 8</li>
+<li>Model: 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz</li>
+<li>L1d cache: 192 KiB</li>
+<li>L1i cache: 128 KiB</li>
+<li>L2 cache: 5 MiB</li>
+<li>L3 cache: 8 MiB</li>
+<li>RAM: 16 GB</li>
+<li>OS: Ubuntu 20.04 LTS</li>
+</ul>
+<p>The naive implementation and all optimizations are written in C++ and compiled with g++ compiler version 9.4.0. O3 compiler optimization flag was used for all implementation. Parallelism was implemented using OpenMP version 4.5.</p>
+<p>The number of input cities ranged from 8 to 30. The location of each city was set to have a random x-coordinate between 0 to 500 and a random y-coordinate between 0 to 500. Random seed 0 was used to produce deterministic output.</p>
+<p>The Optimizations were applied incrementally in order, whereas later optimization implicitly uses all earlier optimizations.</p>
+<h2 id="naive-implementation">Naive implementation</h2>
+<p>The naive approach set the baseline performance of the algorithm. The naive solution is to try all permutations of visiting n cities in order, then select the ordering that gives the optimal result.</p>
+<pre><code class="language-c++"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">tsp_unopt</span> <span class="hljs-params">(vector&lt;City&gt; cities, <span class="hljs-type">float</span> curr_total)</span>
+</span>{
+  <span class="hljs-type">int</span> size = cities.<span class="hljs-built_in">size</span> ();
+  <span class="hljs-comment">// base case: no more cities to visit</span>
+  <span class="hljs-keyword">if</span> (size == <span class="hljs-number">0</span>)
+  {
+    <span class="hljs-comment">// connect first and last cities to form cycle</span>
+    <span class="hljs-type">float</span> total_dist = <span class="hljs-built_in">dist</span> (visited[<span class="hljs-number">0</span>], visited[visited.<span class="hljs-built_in">size</span> ()<span class="hljs-number">-1</span>]) + curr_total;
+    <span class="hljs-comment">// update minimum total distance if needed</span>
+    <span class="hljs-keyword">if</span> (total_dist &lt; min_total_dist)
+    {
+      min_total_dist = total_dist;
+      <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i = <span class="hljs-number">0</span>; i &lt; visited.<span class="hljs-built_in">size</span> (); i++)
+        tsp_route[i] = visited[i];
+    }
+    <span class="hljs-keyword">return</span>;
+  }
+
+  <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> i = <span class="hljs-number">0</span>; i &lt; size; i++)
+  {
+    <span class="hljs-comment">// visit next city</span>
+    visited[size<span class="hljs-number">-1</span>] = cities[i];
+    <span class="hljs-function">vector&lt;City&gt; <span class="hljs-title">sub_cities</span> <span class="hljs-params">(size<span class="hljs-number">-1</span>)</span></span>;
+    <span class="hljs-type">int</span> k = <span class="hljs-number">0</span>;
+    <span class="hljs-comment">// exclude visited city from the cities</span>
+    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> j = <span class="hljs-number">0</span>; j &lt; size; j++)
+    {
+      <span class="hljs-keyword">if</span> (j == i)
+        <span class="hljs-keyword">continue</span>;
+
+      sub_cities[k] = (cities[j]);
+      k++;
+    }
+
+    <span class="hljs-built_in">tsp_unopt</span> (sub_cities, curr_total + <span class="hljs-built_in">dist</span> (visited[size<span class="hljs-number">-1</span>], visited[size]));
+  }
+}
+</code></pre>
+<p>However, the brute force approach requires computing (n-1)!=O(n!) different ordering of cities, where search space become intractable even for the small graph.</p>
+<h3 id="result">Result</h3>
+<p>Results after input size 13 were estimated based on the growth pattern.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Size</th>
+<th style="text-align:center">Time (Seconds)</th>
+<th style="text-align:center">Tour cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">8</td>
+<td style="text-align:center">0.000</td>
+<td style="text-align:center">1329.76</td>
+</tr>
+<tr>
+<td style="text-align:center">9</td>
+<td style="text-align:center">0.003</td>
+<td style="text-align:center">1471.03</td>
+</tr>
+<tr>
+<td style="text-align:center">10</td>
+<td style="text-align:center">0.055</td>
+<td style="text-align:center">1483.82</td>
+</tr>
+<tr>
+<td style="text-align:center">11</td>
+<td style="text-align:center">0.323</td>
+<td style="text-align:center">1529.18</td>
+</tr>
+<tr>
+<td style="text-align:center">12</td>
+<td style="text-align:center">2.987</td>
+<td style="text-align:center">1529.62</td>
+</tr>
+<tr>
+<td style="text-align:center">13</td>
+<td style="text-align:center">36.082</td>
+<td style="text-align:center">1531.18</td>
+</tr>
+<tr>
+<td style="text-align:center">14</td>
+<td style="text-align:center">~504</td>
+<td style="text-align:center">-</td>
+</tr>
+<tr>
+<td style="text-align:center">15</td>
+<td style="text-align:center">~7560</td>
+<td style="text-align:center">-</td>
+</tr>
+<tr>
+<td style="text-align:center">16</td>
+<td style="text-align:center">~120960</td>
+<td style="text-align:center">-</td>
+</tr>
+<tr>
+<td style="text-align:center">...</td>
+<td style="text-align:center">...</td>
+<td style="text-align:center">-</td>
+</tr>
+<tr>
+<td style="text-align:center">30</td>
+<td style="text-align:center">Trillions</td>
+<td style="text-align:center">-</td>
+</tr>
+</tbody>
+</table>
+<h2 id="profile-1">Profile #1</h2>
+<p>Using <code>perf</code>, it was observed that most of the computations were spent on recursions (i.e. computing subpaths). Therefore, the first step is to cut down on number of recursions.</p>
+<p><img src="file:////home/bug/Desktop/optimization/tsp_opt/report/profile1.png" alt=""></p>
+<h2 id="high-level-approximation-algorithm-and-caching">High Level: Approximation algorithm and Caching</h2>
+<h3 id="analysis">Analysis</h3>
+<p>The idea here is to safely ignore computing some of the paths that cannot be part of the solution. This can be done by making an approximation for the subpath and comparing with cost of a known path (See the figure below). To do so, the algorithm should never make an over-approximated guess. Over-approximation can result in ignoring the potential solution with minimum tour cost. Therefore, the approximation should be always less than the true cost of the path. For this reason, the cost of the Minimum Spanning Tree (MST) of the path can be used for the approximation.</p>
+<p><img src="file:////home/bug/Desktop/optimization/tsp_opt/report/prune.png" alt=""></p>
+<blockquote>
+<p>Proof:
+We know that TSP finds a tour cycle that visits all vertices. After removing an edge from the TSP cycle, the solution becomes a spanning tree since all vertices are connected without any cycle. From this, we can see that there exists at least one spanning tree that cost less than the TSP tour cycle. Then, the lowest cost spanning tree (i.e. Minimum Spanning Tree) must cost less than the TSP tour cycle. Therefore, we conclude that it is safe to approximate the cost of a path using MST.</p>
+</blockquote>
+<p>Prim's algorithm was used to compute the MST. The main idea behind Prim's algorithm is to find the next unvisited vertex with minimum cost and then visit it. A priority queue is generally needed for managing what vertex should visit next. The time complexity of Prim's algorithm with priority queue is known as <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mo stretchy="false">(</mo><mi>n</mi><mo>+</mo><mi>m</mi><mo stretchy="false">)</mo><mi>log</mi><mo>⁡</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O((n+m)\log n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">((</span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">m</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">lo<span style="margin-right:0.01389em;">g</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span> (= <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><msup><mi>n</mi><mn>2</mn></msup><mi>log</mi><mo>⁡</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n^2 \log n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop">lo<span style="margin-right:0.01389em;">g</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span> for the complete graph). However, in the case of a complete graph, the next unvisited vertex with minimum cost must be one of the neighbors of the most recently visited vertex. Therefore, a simple scan of neighbors is enough to determine what vertex should be visited next, which can be stored in a variable instead of a queue. This simple modification allows MST to be computed in <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><msup><mi>n</mi><mn>2</mn></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n^2)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> time.</p>
+<p>Another catch to computing MST is that many paths contain common MST. If two paths contain the same vertices, then the same MST can be constructed (See figure below). So, to avoid recomputing MST for each path, the idea here is to cache the MST after the first encounter. The hash table was used for this purpose where a set of vertices as a key and the corresponding MST cost as a value.</p>
+<p><img src="file:////home/bug/Desktop/optimization/tsp_opt/report/common-mst.png" alt=""></p>
+<blockquote>
+<p>Efficiency: For a set of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi></mrow><annotation encoding="application/x-tex">n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.4306em;"></span><span class="mord mathnormal">n</span></span></span></span> vertices, there are <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mi>n</mi></msup></mrow><annotation encoding="application/x-tex">2^n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6644em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6644em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span></span></span></span></span></span></span></span> possible subsets. Therefore, there are at most <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mi>n</mi></msup></mrow><annotation encoding="application/x-tex">2^n</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6644em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6644em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span></span></span></span></span></span></span></span> unique MSTs that need to be computed. Assume that cached MST cost can be obtained in <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mn>1</mn><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(1)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord">1</span><span class="mclose">)</span></span></span></span> and we found that approximation algorithm (prim's algorithm in this case) takes <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><msup><mi>n</mi><mn>2</mn></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n^2)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span>. Combining the approximation algorithm with caching, the total time complexity of the TSP now reduces to <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><msup><mi>n</mi><mn>2</mn></msup><msup><mn>2</mn><mi>n</mi></msup><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n^2 2^n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">n</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6644em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">n</span></span></span></span></span></span></span></span><span class="mclose">)</span></span></span></span> in the average case.</p>
+</blockquote>
+<h3 id="result-1">Result</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Size</th>
+<th style="text-align:center">Time (Seconds)</th>
+<th style="text-align:center">Tour cost</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">10</td>
+<td style="text-align:center">0.003</td>
+<td style="text-align:center">1483.82</td>
+</tr>
+<tr>
+<td style="text-align:center">11</td>
+<td style="text-align:center">0.007</td>
+<td style="text-align:center">1529.18</td>
+</tr>
+<tr>
+<td style="text-align:center">12</td>
+<td style="text-align:center">0.020</td>
+<td style="text-align:center">1529.62</td>
+</tr>
+<tr>
+<td style="text-align:center">13</td>
+<td style="text-align:center">0.017</td>
+<td style="text-align:center">1531.18</td>
+</tr>
+<tr>
+<td style="text-align:center">14</td>
+<td style="text-align:center">0.025</td>
+<td style="text-align:center">1534.50</td>
+</tr>
+<tr>
+<td style="text-align:center">15</td>
+<td style="text-align:center">0.104</td>
+<td style="text-align:center">1646.86</td>
+</tr>
+<tr>
+<td style="text-align:center">16</td>
+<td style="text-align:center">0.065</td>
+<td style="text-align:center">1705.58</td>
+</tr>
+<tr>
+<td style="text-align:center">17</td>
+<td style="text-align:center">0.283</td>
+<td style="text-align:center">1818.18</td>
+</tr>
+<tr>
+<td style="text-align:center">18</td>
+<td style="text-align:center">0.200</td>
+<td style="text-align:center">1828.53</td>
+</tr>
+<tr>
+<td style="text-align:center">19</td>
+<td style="text-align:center">0.126</td>
+<td style="text-align:center">1829.87</td>
+</tr>
+<tr>
+<td style="text-align:center">20</td>
+<td style="text-align:center">0.309</td>
+<td style="text-align:center">1861.09</td>
+</tr>
+<tr>
+<td style="text-align:center">21</td>
+<td style="text-align:center">0.320</td>
+<td style="text-align:center">1865.81</td>
+</tr>
+<tr>
+<td style="text-align:center">22</td>
+<td style="text-align:center">0.572</td>
+<td style="text-align:center">1891.83</td>
+</tr>
+<tr>
+<td style="text-align:center">23</td>
+<td style="text-align:center">1.938</td>
+<td style="text-align:center">1897.69</td>
+</tr>
+<tr>
+<td style="text-align:center">24</td>
+<td style="text-align:center">3.322</td>
+<td style="text-align:center">1946.16</td>
+</tr>
+<tr>
+<td style="text-align:center">25</td>
+<td style="text-align:center">5.874</td>
+<td style="text-align:center">1964.82</td>
+</tr>
+<tr>
+<td style="text-align:center">26</td>
+<td style="text-align:center">102.174</td>
+<td style="text-align:center">2029.42</td>
+</tr>
+<tr>
+<td style="text-align:center">27</td>
+<td style="text-align:center">43.087</td>
+<td style="text-align:center">2083.86</td>
+</tr>
+<tr>
+<td style="text-align:center">28</td>
+<td style="text-align:center">60.268</td>
+<td style="text-align:center">2118.28</td>
+</tr>
+<tr>
+<td style="text-align:center">29</td>
+<td style="text-align:center">52.746</td>
+<td style="text-align:center">2122.19</td>
+</tr>
+<tr>
+<td style="text-align:center">30</td>
+<td style="text-align:center">268.344</td>
+<td style="text-align:center">2216.76</td>
+</tr>
+</tbody>
+</table>
+<h2 id="profile-2">Profile #2</h2>
+<p>It was observed that there are still a lot of subpaths to compute. Distributing the workload was chosen to be the next step.</p>
+<p><img src="file:////home/bug/Desktop/optimization/tsp_opt/report/profile2.png" alt=""></p>
+<h2 id="multi-threading">Multi-threading</h2>
+<p>The idea here is to distribute the computation of the sub-path to multiple threads. For this reason, exploratory decomposition was used. Starting at the home city, there are <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">n-1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span> sub-path that need to be explored. This naturally leads to partitioning the search space of TSP into <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>n</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">n-1</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span> parts that can be concurrently executed.</p>
+<p><img src="file:////home/bug/Desktop/optimization/tsp_opt/report/multithread.png" alt=""></p>
+<p>To maximize parallelism, a few adjustments were made to the serial implementation. First, instead of sharing computed MST among all threads, each thread gets assigned its own hash table for storing MST. Unlike serial implementation, now some MSTs get recomputed by multiple threads. Second, the global minimum tour cost is shared among all threads. The global minimum tour cost is accessed in two scenarios. One scenario is when checking whether the sub-path can be pruned. To do so, estimated tour cost (known path cost + approximated subpath cost) must be bigger than the minimum tour cost. Since minimum tour cost only decreases, accessing out-of-date minimum tour cost is still safe from causing false pruning hence do not harm the correctness even without locking. Although it result in a more conservative pruning, avoiding locking contention was observed to be more effective. The other scenario is when the minimum tour cost must be updated. Unlucky scheduling order of concurrent threads can accidentally overwrite the potential minimum tour cost, so read and write must happen atomically. The lock must be used in this case, which can be problematic as the number of thread increase. Finally, a dynamic scheduling policy was used. Due to pruning and caching, the workload of each partition is highly unbalanced, making it a good candidate for dynamic scheduling.</p>
+<h3 id="result-2">Result</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Size</th>
+<th style="text-align:center">1 threads Time (Seconds)</th>
+<th style="text-align:center">4 threads Time (Seconds)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">10</td>
+<td style="text-align:center">0.003</td>
+<td style="text-align:center">0.001</td>
+</tr>
+<tr>
+<td style="text-align:center">11</td>
+<td style="text-align:center">0.007</td>
+<td style="text-align:center">0.003</td>
+</tr>
+<tr>
+<td style="text-align:center">12</td>
+<td style="text-align:center">0.020</td>
+<td style="text-align:center">0.012</td>
+</tr>
+<tr>
+<td style="text-align:center">13</td>
+<td style="text-align:center">0.017</td>
+<td style="text-align:center">0.013</td>
+</tr>
+<tr>
+<td style="text-align:center">14</td>
+<td style="text-align:center">0.025</td>
+<td style="text-align:center">0.010</td>
+</tr>
+<tr>
+<td style="text-align:center">15</td>
+<td style="text-align:center">0.104</td>
+<td style="text-align:center">0.033</td>
+</tr>
+<tr>
+<td style="text-align:center">16</td>
+<td style="text-align:center">0.065</td>
+<td style="text-align:center">0.022</td>
+</tr>
+<tr>
+<td style="text-align:center">17</td>
+<td style="text-align:center">0.283</td>
+<td style="text-align:center">0.107</td>
+</tr>
+<tr>
+<td style="text-align:center">18</td>
+<td style="text-align:center">0.200</td>
+<td style="text-align:center">0.072</td>
+</tr>
+<tr>
+<td style="text-align:center">19</td>
+<td style="text-align:center">0.126</td>
+<td style="text-align:center">0.069</td>
+</tr>
+<tr>
+<td style="text-align:center">20</td>
+<td style="text-align:center">0.309</td>
+<td style="text-align:center">0.166</td>
+</tr>
+<tr>
+<td style="text-align:center">21</td>
+<td style="text-align:center">0.320</td>
+<td style="text-align:center">0.112</td>
+</tr>
+<tr>
+<td style="text-align:center">22</td>
+<td style="text-align:center">0.572</td>
+<td style="text-align:center">0.273</td>
+</tr>
+<tr>
+<td style="text-align:center">23</td>
+<td style="text-align:center">1.938</td>
+<td style="text-align:center">1.031</td>
+</tr>
+<tr>
+<td style="text-align:center">24</td>
+<td style="text-align:center">3.322</td>
+<td style="text-align:center">0.729</td>
+</tr>
+<tr>
+<td style="text-align:center">25</td>
+<td style="text-align:center">5.874</td>
+<td style="text-align:center">1.830</td>
+</tr>
+<tr>
+<td style="text-align:center">26</td>
+<td style="text-align:center">102.174</td>
+<td style="text-align:center">29.317</td>
+</tr>
+<tr>
+<td style="text-align:center">27</td>
+<td style="text-align:center">43.087</td>
+<td style="text-align:center">21.608</td>
+</tr>
+<tr>
+<td style="text-align:center">28</td>
+<td style="text-align:center">60.268</td>
+<td style="text-align:center">34.196</td>
+</tr>
+<tr>
+<td style="text-align:center">29</td>
+<td style="text-align:center">52.746</td>
+<td style="text-align:center">22.761</td>
+</tr>
+<tr>
+<td style="text-align:center">30</td>
+<td style="text-align:center">268.344</td>
+<td style="text-align:center">108.945</td>
+</tr>
+</tbody>
+</table>
+<p>Limitation:
+Due to the lock contention for updating the global minimum tour cost and sharing global variables among threads (which lead to cache coherence problem), linear speed up based on number of threads was not observed.</p>
+<h2 id="profile-3">Profile #3</h2>
+<p>Using <code>valgrind --tool=cachegrind</code>, it was observed that L1 cache miss rate grow as input size increase.</p>
+<pre><code>...
+==19705== Command: ./tsp 1 16
+==19705== 
+==19705== D   refs:      213,394,016  (136,997,450 rd   + 76,396,566 wr)
+==19705== D1  misses:        412,098  (    388,090 rd   +     24,008 wr)
+==19705== LLd misses:         20,575  (      8,893 rd   +     11,682 wr)
+==19705== D1  miss rate:         0.2% (        0.3%     +        0.0%  )
+==19705== LLd miss rate:         0.0% (        0.0%     +        0.0%  )
+...
+
+==19707== Command: ./tsp 1 17
+...
+==19707== 
+==19707== D   refs:      1,667,563,083  (1,069,534,853 rd   + 598,028,230 wr)
+==19707== D1  misses:        4,192,417  (    4,078,933 rd   +     113,484 wr)
+==19707== LLd misses:           50,578  (        8,894 rd   +      41,684 wr)
+==19707== D1  miss rate:           0.3% (          0.4%     +         0.0%  )
+==19707== LLd miss rate:           0.0% (          0.0%     +         0.0%  )
+...
+
+==19746== Command: ./tsp 1 18
+...
+==19746== 
+==19746== D   refs:       4,716,785,644  (3,029,112,081 rd   + 1,687,673,563 wr)
+==19746== D1  misses:        18,265,535  (   17,838,307 rd   +       427,228 wr)
+==19746== LLd misses:            99,156  (        8,899 rd   +        90,257 wr)
+==19746== D1  miss rate:            0.4% (          0.6%     +           0.0%  )
+==19746== LLd miss rate:            0.0% (          0.0%     +           0.0%  )
+...
+</code></pre>
+<h2 id="low-level-soa-and-hardware-caching">Low Level: SoA and hardware Caching</h2>
+<p>Initially, TSP was implemented using OOP design with AoS. Standard c++ library such as <code>vector class</code> was used instead of simple array.</p>
+<pre><code class="language-c++"><span class="hljs-keyword">class</span> <span class="hljs-title class_">City</span>
+{
+  <span class="hljs-keyword">public</span>:
+    <span class="hljs-type">int</span> id;
+    <span class="hljs-type">int</span> x;
+    <span class="hljs-type">int</span> y;
+
+    <span class="hljs-built_in">City</span> ()
+    {
+      <span class="hljs-keyword">this</span>-&gt;id = <span class="hljs-number">-1</span>;
+      <span class="hljs-keyword">this</span>-&gt;x = <span class="hljs-number">0</span>;
+      <span class="hljs-keyword">this</span>-&gt;y = <span class="hljs-number">0</span>;
+    }
+    ...
+};
+
+vector&lt;City&gt; cities; 
+vector&lt;City&gt; visited;
+vector&lt;City&gt; tsp_route;
+</code></pre>
+<p>Therefore, the code was converted to use SoA to reduce the number of implicit pointers used in OOP that potentially cause cache misses.</p>
+<pre><code class="language-c++"><span class="hljs-type">int</span> city_id[num_city];
+<span class="hljs-type">int</span> city_x[MAXNUM_CITY];
+<span class="hljs-type">int</span> city_y[MAXNUM_CITY];
+<span class="hljs-type">int</span> visited[MAXNUM_CITY];
+<span class="hljs-type">int</span> tsp_route[MAXNUM_CITY];
+</code></pre>
+<h3 id="result-3">Result</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Size</th>
+<th style="text-align:center">AoS Time(Seconds)</th>
+<th style="text-align:center">SoA Time (Seconds)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">10</td>
+<td style="text-align:center">0.001</td>
+<td style="text-align:center">0.001</td>
+</tr>
+<tr>
+<td style="text-align:center">11</td>
+<td style="text-align:center">0.003</td>
+<td style="text-align:center">0.002</td>
+</tr>
+<tr>
+<td style="text-align:center">12</td>
+<td style="text-align:center">0.012</td>
+<td style="text-align:center">0.006</td>
+</tr>
+<tr>
+<td style="text-align:center">13</td>
+<td style="text-align:center">0.013</td>
+<td style="text-align:center">0.005</td>
+</tr>
+<tr>
+<td style="text-align:center">14</td>
+<td style="text-align:center">0.010</td>
+<td style="text-align:center">0.005</td>
+</tr>
+<tr>
+<td style="text-align:center">15</td>
+<td style="text-align:center">0.033</td>
+<td style="text-align:center">0.020</td>
+</tr>
+<tr>
+<td style="text-align:center">16</td>
+<td style="text-align:center">0.022</td>
+<td style="text-align:center">0.014</td>
+</tr>
+<tr>
+<td style="text-align:center">17</td>
+<td style="text-align:center">0.107</td>
+<td style="text-align:center">0.055</td>
+</tr>
+<tr>
+<td style="text-align:center">18</td>
+<td style="text-align:center">0.072</td>
+<td style="text-align:center">0.043</td>
+</tr>
+<tr>
+<td style="text-align:center">19</td>
+<td style="text-align:center">0.069</td>
+<td style="text-align:center">0.041</td>
+</tr>
+<tr>
+<td style="text-align:center">20</td>
+<td style="text-align:center">0.166</td>
+<td style="text-align:center">0.096</td>
+</tr>
+<tr>
+<td style="text-align:center">21</td>
+<td style="text-align:center">0.112</td>
+<td style="text-align:center">0.069</td>
+</tr>
+<tr>
+<td style="text-align:center">22</td>
+<td style="text-align:center">0.273</td>
+<td style="text-align:center">0.169</td>
+</tr>
+<tr>
+<td style="text-align:center">23</td>
+<td style="text-align:center">1.031</td>
+<td style="text-align:center">0.577</td>
+</tr>
+<tr>
+<td style="text-align:center">24</td>
+<td style="text-align:center">0.729</td>
+<td style="text-align:center">0.433</td>
+</tr>
+<tr>
+<td style="text-align:center">25</td>
+<td style="text-align:center">1.830</td>
+<td style="text-align:center">1.096</td>
+</tr>
+<tr>
+<td style="text-align:center">26</td>
+<td style="text-align:center">29.317</td>
+<td style="text-align:center">16.477</td>
+</tr>
+<tr>
+<td style="text-align:center">27</td>
+<td style="text-align:center">21.608</td>
+<td style="text-align:center">12.449</td>
+</tr>
+<tr>
+<td style="text-align:center">28</td>
+<td style="text-align:center">34.196</td>
+<td style="text-align:center">21.087</td>
+</tr>
+<tr>
+<td style="text-align:center">29</td>
+<td style="text-align:center">22.761</td>
+<td style="text-align:center">13.141</td>
+</tr>
+<tr>
+<td style="text-align:center">30</td>
+<td style="text-align:center">108.945</td>
+<td style="text-align:center">68.273</td>
+</tr>
+</tbody>
+</table>
+<h2 id="references">References:</h2>
+<p>[1] J.L. Bentley, Writing Efficient Programs, 1st ed. Prentice-Hall Software Series, 1982.</p>
+
+            <script async src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+            
+        </body>
+        </html>
