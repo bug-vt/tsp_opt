@@ -12,50 +12,14 @@
 
 using namespace std;
 
-class City
-{
-  public:
-    int id;
-    int x;
-    int y;
-
-    City ()
-    {
-      this->id = -1;
-      this->x = 0;
-      this->y = 0;
-    }
-
-    City (int id)
-    {
-      this->id = id;
-      this->x = rand() % 500;
-      this->y = rand() % 500;
-    }
-
-    friend ostream& operator<< (ostream& os, const City& city); 
-};
-
-
-
-/*
-ostream& operator<< (ostream& os, const City& city)
-{
-  os << city.id;
-  return os;
-}
-*/
-
+// number of cities to visit
 int num_city;
 // cities to visit
-//vector<City> cities; 
 int city_x[MAXNUM_CITY];
 int city_y[MAXNUM_CITY];
 // visited cities in order
-//vector<City> visited;
 int visited[MAXNUM_CITY];
 // final/optimal tsp route
-//vector<City> tsp_route;
 int tsp_route[MAXNUM_CITY];
 // current minimum tsp route distance
 float min_total_dist;
@@ -64,6 +28,7 @@ thread_local unordered_map<long, float> mst_table;
 
 omp_lock_t min_update_lock;
 
+// initialize location of the cities.
 void init_cities ()
 {
   for (int i = 0; i < num_city; i++)
@@ -73,6 +38,7 @@ void init_cities ()
   }
 }
 
+// display tsp route. 
 string show_route ()
 {
   string out = "[ ";
@@ -83,12 +49,15 @@ string show_route ()
   return out;
 }
 
+// calculate distance between city a and b.
 inline float dist (int a, int b)
 {
   return sqrt (pow(city_x[a] - city_x[b], 2) + pow(city_y[a] - city_y[b], 2));
 }
 
-
+// prim minimum spanning tree algorithm.
+// Implemented without an queue since tsp is a complete graph,
+// reducing complexity from O(n^2 log n) to O(n^2).
 float prim_mst (int city_id[], int city_size)
 {
   // initialize
@@ -97,12 +66,12 @@ float prim_mst (int city_id[], int city_size)
   for (int i = 0; i < city_size; i++)
     cost[i] = numeric_limits<float>::infinity ();
 
+  // keep track of visited cities when building mst (0: unvisited, 1: visited).
   int in_mst[city_size] = {0};
 
   // pick source city
   // in this case, we pick the first city 
   cost[0] = 0;
-  //pair<City, int> min_city (cities[0], 0);
   int min_city = city_id[0];
   int min_city_index = 0;
 
@@ -158,7 +127,7 @@ float mst_lookup (int city_id[], int city_size)
 }
 
 
-// param:
+// Param:
 // city_id: IDs of unvistied cities 
 // city_size: number of unvisited cities
 // curr_total: total distance so far from the visited cities
@@ -240,17 +209,18 @@ void tsp_opt (int city_id[], int city_size, float curr_total)
   }
 }
 
-/*
-void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
+
+void tsp_opt2 (int city_id[], int city_size, float curr_total, int visited[])
 {
-  int size = cities.size ();
+  int size = city_size;
   // base case: no more cities to visit
   if (size == 0)
   {
     // connect first and last cities to form cycle
-    float total_dist = dist (visited[0], visited[tsp_route.size()-1]) + curr_total;
+    float total_dist = dist (visited[0], visited[num_city-1]) + curr_total;
     bool updated = false;
-
+    
+    // lock to avoid race condition on shared variable min_total_dist
     omp_set_lock (&min_update_lock);
     // update minimum total distance if needed
     if (total_dist < min_total_dist)
@@ -262,62 +232,67 @@ void tsp_opt2 (vector<City> cities, float curr_total, City *visited)
 
     if (updated)
     {
-      for (int i = 0; i < tsp_route.size (); i++)
+      for (int i = 0; i < num_city; i++)
         tsp_route[i] = visited[i];
     }
     return;
   }
 
   // stop searching when we already know the route cannot be minimum
-  if (curr_total + mst_lookup (cities) > min_total_dist)
+  if (curr_total + mst_lookup (city_id, size) > min_total_dist)
     return;
 
   for (int i = 0; i < size; i++)
   {
-    visited[size-1] = cities[i];
-    vector<City> sub_cities (size-1);
+    // visit next city
+    visited[size-1] = city_id[i];
+    int sub_city_id[size -1];
     int k = 0;
+    // exclude visited city from the city_id
     for (int j = 0; j < size; j++)
     {
       if (j == i)
         continue;
-
-      sub_cities[k] = (cities[j]);
+      sub_city_id[k] = city_id[j];
       k++;
     }
 
-    tsp_opt2 (sub_cities, curr_total + dist (visited[size-1], visited[size]), visited);
+    tsp_opt2 (sub_city_id, size-1, curr_total + dist (visited[size-1], visited[size]), visited);
   }
 }
 
-void tsp_parallel ()
+void tsp_parallel (int city_id[])
 {
-  // parallelize subtree under first city (subtree with second city as a root)
-  int size = cities.size () - 1;
+  // parallelize subtree under first city (create subtrees where second cities are the roots)
+  int size = num_city - 1;
   #pragma omp parallel
   {
     // We fix last city inside the cities list as a starting point
-    // so starting size is length of cities - 1
-    City *visited = new City [cities.size ()];
-    visited[size] = cities[size];
+    // so starting size is length of cities - 1.
+    // Also, create local visited array per thread.
+    int visited[num_city];
+    visited[size] = size;
 
     #pragma omp for schedule (dynamic)
     for (int i = 0; i < size; i++)
     {
-      visited[size-1] = cities[i];
-      vector<City> sub_cities;
-      for (int k = 0; k < size; k++)
+      visited[size-1] = city_id[i];
+      int sub_city_id[size-1];
+      int k = 0;
+      // exclude visited city from the city_id
+      for (int j = 0; j < size; j++)
       {
-        if (k != i)
-          sub_cities.push_back (cities[k]);
+        if (j == i)
+          continue;
+        sub_city_id[k] = city_id[j];
+        k++;
       }
 
-      tsp_opt2 (sub_cities, dist (visited[size-1], visited[size]), visited);
+      tsp_opt2 (sub_city_id, size-1, dist (visited[size-1], visited[size]), visited);
     }
-    delete (visited);
   }
 }
-*/
+
 
 
 int main (int argc, char** argv)
@@ -338,13 +313,13 @@ int main (int argc, char** argv)
 
   init_cities ();
   
-  // select home city (visit city 0)
-  visited[num_city-1] = 0;
+  // select home city (visit last city)
+  visited[num_city-1] = num_city-1;
 
-  // city ids of unvistied cities (all cities except city 0)
+  // city ids of unvistied cities (all cities except last city)
   int city_id [num_city-1];
   for (int i = 0; i < num_city - 1; i++)
-    city_id[i] = i + 1;
+    city_id[i] = i;
   
   double start, duration;
 
@@ -369,7 +344,7 @@ int main (int argc, char** argv)
       break;
 
     case 2:
-      for (int i = 1; i <= 32; i *= 2)
+      for (int i = 1; i <= 4; i *= 2)
       {
         int nthread = -1;
         omp_set_num_threads (i);
@@ -382,7 +357,7 @@ int main (int argc, char** argv)
         min_total_dist = numeric_limits<float>::infinity ();
         
         start = omp_get_wtime (); 
-        //tsp_parallel ();
+        tsp_parallel (city_id);
         duration = omp_get_wtime () - start; 
         
         printf ("C++ parallel %d | Size %d | %.3f seconds | %.2f | %s\n", 
