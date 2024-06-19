@@ -344,7 +344,7 @@ int main (int argc, char** argv)
       break;
 
     case 2:
-      for (int i = 1; i <= 4; i *= 2)
+      for (int i = 4; i <= 4; i *= 2)
       {
         int nthread = -1;
         omp_set_num_threads (i);
