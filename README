@@ -1,6 +1,9 @@
 # Assignment P3 – TSP optimizations
 ### Bug Lee (7225881)
 
+## Report
+[See the report](report/report.md)
+
 ## How to run:
 The program was built and tested on Ubuntu 20.04 OS. 
 To get the TSP measurement, run 
